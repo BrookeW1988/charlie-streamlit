@@ -7,6 +7,7 @@ import streamlit as st
 import requests
 from datetime import datetime, timedelta
 import pytz
+import hmac
 
 # =============================================================================
 # CONFIG & CONSTANTS
@@ -919,6 +920,67 @@ def render_docs_tab():
             st.markdown(f'<a href="{url}" target="_blank" class="quick-link">{label}</a>', unsafe_allow_html=True)
 
 # =============================================================================
+# AUTHENTICATION
+# =============================================================================
+
+def check_password():
+    """Returns `True` if the user had the correct password."""
+    
+    def password_entered():
+        """Checks whether a password entered by the user is correct."""
+        if hmac.compare_digest(st.session_state["password"], st.secrets.get("password", "CharlieBot123@!")):
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # Don't store the password
+        else:
+            st.session_state["password_correct"] = False
+
+    # Return True if the password is validated
+    if st.session_state.get("password_correct", False):
+        return True
+
+    # Show login form
+    st.markdown("""
+        <style>
+            .login-container {
+                max-width: 400px;
+                margin: 100px auto;
+                padding: 40px;
+                background: rgba(255,255,255,0.05);
+                border: 1px solid rgba(255,255,255,0.1);
+                border-radius: 16px;
+                text-align: center;
+            }
+            .login-title {
+                font-size: 2rem;
+                margin-bottom: 10px;
+                color: #eee;
+            }
+            .login-subtitle {
+                color: #888;
+                margin-bottom: 30px;
+            }
+        </style>
+        <div class="login-container">
+            <div class="login-title">🧠 Charlie Dashboard</div>
+            <div class="login-subtitle">Wright Mode HQ</div>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # Password input
+    st.text_input(
+        "Password", 
+        type="password", 
+        on_change=password_entered, 
+        key="password",
+        placeholder="Enter password..."
+    )
+    
+    if "password_correct" in st.session_state and not st.session_state["password_correct"]:
+        st.error("😕 Incorrect password")
+    
+    return False
+
+# =============================================================================
 # MAIN APP
 # =============================================================================
 
@@ -1053,4 +1115,5 @@ def main():
         render_docs_tab()
 
 if __name__ == "__main__":
-    main()
+    if check_password():
+        main()
